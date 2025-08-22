@@ -12,11 +12,15 @@ const ScoreSchema = new mongoose.Schema({
     required: [true, '存放位置為必填欄位'],
     trim: true,
     maxlength: [4, '存放位置不能超過 4 個字']
+  },
+  // --- 新增欄位 ---
+  tags: {
+    type: String,
+    trim: true,
+    maxlength: [50, '屬性標籤不能超過 50 個字']
   }
 }, {
-  timestamps: true // 自動新增 createdAt 和 updatedAt 時間戳
+  timestamps: true
 });
 
-// 為了防止在 Next.js 的熱重載環境中重複編譯模型，我們需要做此判斷
 export default mongoose.models.Score || mongoose.model('Score', ScoreSchema);
-
