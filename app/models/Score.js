@@ -18,6 +18,21 @@ const ScoreSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: [50, '屬性標籤不能超過 50 個字']
+  },
+  // --- 新增欄位 ---
+  presentationDate: {
+    type: String, // 儲存為 YYYY-MM-DD 格式的字串
+  },
+  remarks: {
+    type: String,
+    trim: true,
+    maxlength: [50, '備註不能超過 50 個字']
+  },
+  coverUrl: { // 儲存圖片的 URL
+    type: String,
+  },
+  coverPublicId: { // 儲存圖片在 Cloudinary 的 Public ID，用於刪除
+    type: String,
   }
 }, {
   timestamps: true

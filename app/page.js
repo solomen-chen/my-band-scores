@@ -1,9 +1,13 @@
+// app/page.js
+
 'use client';
 
 import { useState, useEffect, useTransition, Fragment } from 'react';
-import { Dialog, Combobox } from '@headlessui/react';
+import { Dialog, Combobox, ComboboxOptions, ComboboxOption } from '@headlessui/react';
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon } from '@heroicons/react/24/solid';
 import { getScores, addScore, updateScore, deleteScore, getAllTags } from './actions';
+import { XMarkIcon } from '@heroicons/react/24/solid';
 
 // 主頁面元件
 export default function HomePage() {
@@ -11,9 +15,10 @@ export default function HomePage() {
   const [scores, setScores] = useState([]);
   const [titleKeyword, setTitleKeyword] = useState('');
   const [tagKeyword, setTagKeyword] = useState('');
-  const [allTags, setAllTags] = useState([]); // 所有標籤列表
+  const [allTags, setAllTags] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   // 分頁狀態
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,7 +69,7 @@ export default function HomePage() {
   // 搜尋時觸發 (重置到第一頁)
   useEffect(() => {
     const handler = setTimeout(() => {
-      setCurrentPage(1); // 任何搜尋都應該回到第一頁
+      setCurrentPage(1);
       fetchScores(1);
     }, 300);
     return () => clearTimeout(handler);
@@ -78,12 +83,12 @@ export default function HomePage() {
   };
 
   const handleTagClick = (tag) => {
-    setTagKeyword(tag); // 點擊標籤，自動填入並觸發搜尋
+    setTagKeyword(tag);
   };
 
   const handleSuccess = () => {
-    fetchScores(currentPage); // 操作成功後，重新整理當前頁
-    fetchAllTags(); // 並更新標籤列表
+    fetchScores(currentPage);
+    fetchAllTags();
   };
 
   // --- Modal 控制 ---
@@ -110,7 +115,6 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-6">
-        {/* ... Header and Search Bar (不變) ... */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-200">樂團樂譜檢索系統</h1>
           <button onClick={() => openModal('add')} className="flex items-center gap-2 bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors w-full sm:w-auto">
@@ -129,34 +133,48 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* --- 樂譜列表 (加入可點擊標籤) --- */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-            {/* ... thead (不變) ... */}
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">樂曲名稱</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">存放位置</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">最近獻詩日</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">備註</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">屬性</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
               {(isLoading || isPending) ? (
-                <tr><td colSpan="4" className="text-center py-10 text-slate-500">載入中...</td></tr>
+                <tr><td colSpan="6" className="text-center py-10 text-slate-500">載入中...</td></tr>
               ) : scores.length > 0 ? (
                 scores.map((score) => (
                   <tr key={score._id}>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{score.songTitle}</td>
+                    {/* --- 修改 "樂曲名稱" 欄位 --- */}
+                    <td className="px-6 py-4 whitespace-nowrap font-medium">
+                      {score.coverUrl ? (
+                        // 如果有封面，則渲染為可點擊的按鈕
+                        <button
+                          onClick={() => setLightboxImage(score.coverUrl)}
+                          className="text-left hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors focus:outline-none"
+                        >
+                          {score.songTitle}
+                        </button>
+                      ) : (
+                        // 如果沒有封面，則只顯示文字
+                        <span>{score.songTitle}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">{score.storageLocation}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{score.presentationDate}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-xs truncate" title={score.remarks}>
+                      {score.remarks}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">
                         {score.tags && score.tags.split(/#|\s+/).filter(Boolean).map(tag => (
-                          <button 
-                            key={tag} 
-                            onClick={() => handleTagClick(tag)}
-                            className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 transition-colors"
-                          >
+                          <button key={tag} onClick={() => handleTagClick(tag)} className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 transition-colors">
                             {tag}
                           </button>
                         ))}
@@ -169,80 +187,131 @@ export default function HomePage() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="4" className="text-center py-10 text-slate-500">找不到符合條件的樂譜</td></tr>
+                <tr><td colSpan="6" className="text-center py-10 text-slate-500">找不到符合條件的樂譜</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {/* --- 分頁元件 --- */}
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
 
-      {/* --- Modals (傳入 allTags) --- */}
       <ScoreModal isOpen={isModalOpen} closeModal={closeModal} mode={modalMode} score={selectedScore} onSuccess={handleSuccess} allTags={allTags} />
+      <Lightbox src={lightboxImage} onClose={() => setLightboxImage(null)} />
       <DeleteConfirmModal isOpen={isDeleteConfirmOpen} closeModal={closeDeleteConfirm} onConfirm={handleDelete} isPending={isPending} />
     </div>
   );
 }
+function Lightbox({ src, onClose }) {
+  if (!src) return null;
 
-// --- 新增：分頁元件 ---
+  return (
+    // 使用 Dialog 來處理焦點管理和背景遮罩
+    <Dialog open={!!src} onClose={onClose} className="relative z-50">
+      {/* 背景遮罩 */}
+      <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
+
+      {/* 圖片容器 */}
+      <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+        <Dialog.Panel className="relative">
+          <img src={src} alt="Enlarged score cover" className="max-h-[90vh] max-w-[90vw] object-contain" />
+          {/* 關閉按鈕 */}
+          <button
+            onClick={onClose}
+            className="absolute -top-4 -right-4 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 focus:outline-none"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+}
+
 function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
-
-  const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
     <nav className="flex items-center justify-center mt-6" aria-label="Pagination">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300"
-      >
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300">
         上一頁
       </button>
       {pageNumbers.map(number => (
-        <button
-          key={number}
-          onClick={() => onPageChange(number)}
-          className={`-ml-px relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-            currentPage === number
-              ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600 dark:bg-indigo-900'
-              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300'
-          }`}
-        >
+        <button key={number} onClick={() => onPageChange(number)} className={`-ml-px relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600 dark:bg-indigo-900' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300'}`}>
           {number}
         </button>
       ))}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="-ml-px relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300"
-      >
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="-ml-px relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300">
         下一頁
       </button>
     </nav>
   );
 }
 
-// --- 修改 ScoreModal 以支援標籤建議 ---
 function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
   const [isPending, startTransition] = useTransition();
-  const [tagQuery, setTagQuery] = useState(''); // 用於 Combobox 的查詢狀態
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // --- 使用 State 管理所有表單欄位 ---
+  const [songTitle, setSongTitle] = useState('');
+  const [storageLocation, setStorageLocation] = useState('');
+  const [tags, setTags] = useState('');
+  const [presentationDate, setPresentationDate] = useState('');
+  const [remarks, setRemarks] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
+  const [coverPublicId, setCoverPublicId] = useState('');
+  
+  // 用於 Combobox 的查詢狀態
+  const [tagQuery, setTagQuery] = useState('');
 
-  const filteredTags =
-    tagQuery === ''
-      ? allTags
-      : allTags.filter((tag) =>
-          tag.toLowerCase().includes(tagQuery.toLowerCase())
-        );
+  useEffect(() => {
+    if (isOpen) {
+      setSongTitle(score?.songTitle || '');
+      setStorageLocation(score?.storageLocation || '');
+      setTags(score?.tags || '');
+      setPresentationDate(score?.presentationDate || '');
+      setRemarks(score?.remarks || '');
+      setCoverUrl(score?.coverUrl || '');
+      setCoverPublicId(score?.coverPublicId || '');
+      setTagQuery('');
+    }
+  }, [isOpen, score]);
+
+  const filteredTags = tagQuery === '' ? allTags : allTags.filter((tag) => tag.toLowerCase().includes(tagQuery.toLowerCase()));
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData } );
+      const data = await response.json();
+      if (data.secure_url) {
+        setCoverUrl(data.secure_url);
+        setCoverPublicId(data.public_id);
+      } else { throw new Error('Upload failed'); }
+    } catch (error) {
+      alert('圖片上傳失敗，請稍後再試。');
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const formData = new FormData(event.target);
+    const formData = new FormData();
+    formData.append('songTitle', songTitle);
+    formData.append('storageLocation', storageLocation);
+    formData.append('tags', tags);
+    formData.append('presentationDate', presentationDate);
+    formData.append('remarks', remarks);
+    formData.append('coverUrl', coverUrl);
+    formData.append('coverPublicId', coverPublicId);
     startTransition(async () => {
       const action = mode === 'add' ? addScore(formData) : updateScore(score._id, formData);
       const result = await action;
@@ -259,90 +328,109 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
     <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
-          <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+        <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
+          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
             {mode === 'add' ? '新增樂譜' : '編輯樂譜'}
-          </Dialog.Title>
+          </h3>
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            {/* ... songTitle and storageLocation fields (不變) ... */}
+            {/* ... 其他欄位 (songTitle, storageLocation) ... */}
             <div>
               <label htmlFor="songTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300">樂曲名稱</label>
-              <input type="text" name="songTitle" id="songTitle" required maxLength="10" defaultValue={score?.songTitle || ''} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
+              <input type="text" id="songTitle" required maxLength="10" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
             </div>
             <div>
               <label htmlFor="storageLocation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">存放位置</label>
-              <input type="text" name="storageLocation" id="storageLocation" required maxLength="4" defaultValue={score?.storageLocation || ''} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
+              <input type="text" id="storageLocation" required maxLength="4" value={storageLocation} onChange={(e) => setStorageLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
             </div>
             
-            {/* --- 使用 Combobox 實現標籤建議 --- */}
+            {/* --- 使用最新 v2.x 寫法重構 Combobox --- */}
             <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300">屬性標籤</label>
-              <Combobox defaultValue={score?.tags || ''}>
+              <label htmlFor="tags-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">屬性標籤</label>
+              <Combobox value={tags} onChange={setTags} onClose={() => setTagQuery('')}>
                 <div className="relative mt-1">
-                  <Combobox.Input
-                    name="tags"
-                    id="tags"
+                  {/* 直接使用 input，Headless UI 會自動關聯 */}
+                  <input
+                    id="tags-input"
                     maxLength="50"
                     placeholder="例如: #感恩 #讚美 #節慶"
-                    className="w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700"
-                    onChange={(event) => setTagQuery(event.target.value.split(/#|\s+/).pop())}
+                    className="w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 pr-10"
+                    onChange={(event) => {
+                      setTags(event.target.value);
+                      setTagQuery(event.target.value.split(/#|\s+/).pop());
+                    }}
+                    // 讓 Combobox 控制 input 的 value
+                    value={tags}
                   />
-                  <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+                  {/* 直接使用 button */}
+                  <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-2">
                     <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                  </Combobox.Button>
+                  </button>
                 </div>
-                <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-auto overflow-auto rounded-md bg-white dark:bg-slate-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                {/* 使用獨立的 ComboboxOptions 元件 */}
+                <ComboboxOptions anchor="bottom" className="absolute z-20 mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-md bg-white dark:bg-slate-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
                   {filteredTags.length === 0 && tagQuery !== '' ? (
-                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                      找不到標籤
-                    </div>
+                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">可直接輸入新標籤</div>
                   ) : (
                     filteredTags.map((tag) => (
-                      <Combobox.Option
+                      // 使用獨立的 ComboboxOption 元件
+                      <ComboboxOption
                         key={tag}
-                        className={({ active }) =>
-                          `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                            active ? 'bg-indigo-600 text-white' : 'text-gray-900 dark:text-gray-200'
-                          }`
-                        }
+                        className="group relative cursor-default select-none py-2 pl-10 pr-4 data-[focus]:bg-indigo-600 data-[focus]:text-white text-gray-900 dark:text-gray-200"
                         value={tag}
                       >
-                        {({ selected, active }) => (
-                          <>
-                            <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                              {tag}
-                            </span>
-                          </>
-                        )}
-                      </Combobox.Option>
+                        <span className="block truncate group-data-[selected]:font-medium">{tag}</span>
+                      </ComboboxOption>
                     ))
                   )}
-                </Combobox.Options>
+                </ComboboxOptions>
               </Combobox>
             </div>
 
+            {/* ... 其他欄位 (presentationDate, remarks, cover) ... */}
+            <div>
+              <label htmlFor="presentationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">獻詩日</label>
+              <input type="date" id="presentationDate" value={presentationDate} onChange={(e) => setPresentationDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
+            </div>
+            <div>
+              <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 dark:text-gray-300">備註</label>
+              <textarea id="remarks" rows="2" maxLength="50" value={remarks} onChange={(e) => setRemarks(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700"></textarea>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">封面</label>
+              <div className="mt-2 flex items-center gap-x-3">
+                {coverUrl ? (<img src={coverUrl} alt="Cover preview" className="h-16 w-16 object-cover rounded-md" />) : (<div className="h-16 w-16 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center"><PhotoIcon className="h-8 w-8 text-slate-400" /></div>)}
+                <label htmlFor="file-upload" className="cursor-pointer rounded-md bg-white dark:bg-slate-600 px-2.5 py-1.5 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-slate-500 hover:bg-gray-50 dark:hover:bg-slate-500">
+                  {isUploading ? '上傳中...' : '更換圖片'}
+                </label>
+                <input id="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" disabled={isUploading} />
+              </div>
+            </div>
             <div className="mt-6 flex justify-end gap-4">
               <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-600 rounded-md hover:bg-gray-200 dark:hover:bg-slate-500">取消</button>
-              <button type="submit" disabled={isPending} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300">{isPending ? '儲存中...' : '儲存'}</button>
+              <button type="submit" disabled={isPending || isUploading} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed">
+                {isPending ? '儲存中...' : '儲存'}
+              </button>
             </div>
           </form>
-        </Dialog.Panel>
+        </div>
       </div>
     </Dialog>
   );
 }
-
-// DeleteConfirmModal 元件保持不變
 function DeleteConfirmModal({ isOpen, closeModal, onConfirm, isPending }) {
-  // ... 程式碼不變 ...
   return (
     <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
+      {/* 背景遮罩 */}
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+      {/* 對話框容器 */}
       <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
-          <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+        {/* 移除 Dialog.Panel，改用 div */}
+        <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
+          {/* 移除 Dialog.Title，改用 h3 */}
+          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
             確認刪除
-          </Dialog.Title>
+          </h3>
           <div className="mt-2">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               您確定要刪除這筆樂譜資料嗎？此操作無法復原。
@@ -350,9 +438,11 @@ function DeleteConfirmModal({ isOpen, closeModal, onConfirm, isPending }) {
           </div>
           <div className="mt-6 flex justify-end gap-4">
             <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-600 rounded-md hover:bg-gray-200 dark:hover:bg-slate-500">取消</button>
-            <button type="button" onClick={onConfirm} disabled={isPending} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-red-300">{isPending ? '刪除中...' : '確認刪除'}</button>
+            <button type="button" onClick={onConfirm} disabled={isPending} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-red-300">
+              {isPending ? '刪除中...' : '確認刪除'}
+            </button>
           </div>
-        </Dialog.Panel>
+        </div>
       </div>
     </Dialog>
   );
