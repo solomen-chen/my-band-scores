@@ -8,6 +8,7 @@ import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpDownIcon
 import { PhotoIcon } from '@heroicons/react/24/solid';
 import { getScores, addScore, updateScore, deleteScore, getAllTags } from './actions';
 import { XMarkIcon } from '@heroicons/react/24/solid';
+import toast from 'react-hot-toast'; // 2. 導入 toast
 
 // 主頁面元件
 export default function HomePage() {
@@ -43,7 +44,7 @@ export default function HomePage() {
         page: pageToFetch 
       });
       if (result.error) {
-        alert(result.error);
+        toast.error(`讀取資料失敗: ${result.error}`);
         setScores([]);
         setTotalPages(0);
       } else {
@@ -267,23 +268,30 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
   const [coverUrl, setCoverUrl] = useState('');
   const [coverPublicId, setCoverPublicId] = useState('');
   const [videoUrl, setVideoUrl] = useState(''); // 包含影片連結的 state
-  
+  // --- State 用於儲存 "原始" 資料，以便還原 ---
+  const [originalScore, setOriginalScore] = useState(null);
   const [tagQuery, setTagQuery] = useState('');
 
   useEffect(() => {
+    // 當 Modal 開啟時，設定 "當前" 狀態和 "原始" 狀態
     if (isOpen) {
-      // 初始化所有 state
-      setSongTitle(score?.songTitle || '');
-      setStorageLocation(score?.storageLocation || '');
-      setTags(score?.tags || '');
-      setPresentationDate(score?.presentationDate || '');
-      setRemarks(score?.remarks || '');
-      setCoverUrl(score?.coverUrl || '');
-      setCoverPublicId(score?.coverPublicId || '');
-      setVideoUrl(score?.videoUrl || ''); // 初始化影片連結
+      const initialScore = mode === 'edit' ? score : {};
+      
+      setSongTitle(initialScore?.songTitle || '');
+      setStorageLocation(initialScore?.storageLocation || '');
+      setTags(initialScore?.tags || '');
+      setPresentationDate(initialScore?.presentationDate || '');
+      setRemarks(initialScore?.remarks || '');
+      setCoverUrl(initialScore?.coverUrl || '');
+      setCoverPublicId(initialScore?.coverPublicId || '');
+      setVideoUrl(initialScore?.videoUrl || '');
+      
+      // 如果是編輯模式，就將原始資料存起來
+      setOriginalScore(mode === 'edit' ? initialScore : null);
+
       setTagQuery('');
     }
-  }, [isOpen, score]);
+  }, [isOpen, score, mode]);
 
   const filteredTags = tagQuery === '' ? allTags : allTags.filter((tag) => tag.toLowerCase().includes(tagQuery.toLowerCase()));
 
@@ -302,7 +310,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
         setCoverPublicId(data.public_id);
       } else { throw new Error('Upload failed'); }
     } catch (error) {
-      alert('圖片上傳失敗，請稍後再試。');
+      toast.error('圖片上傳失敗，請稍後再試。');
       console.error(error);
     } finally {
       setIsUploading(false);
@@ -311,7 +319,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const formData = new FormData();
+    const formData = new FormData(event.target);
     // 將所有 state 的值加入 FormData
     formData.append('songTitle', songTitle);
     formData.append('storageLocation', storageLocation);
@@ -326,8 +334,41 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
       const action = mode === 'add' ? addScore(formData) : updateScore(score._id, formData);
       const result = await action;
       if (result?.error) {
-        alert(result.error);
+        // --- 關鍵：精準還原的邏輯 ---
+        toast.error(result.error); // 這裡直接顯示後端傳來的錯誤訊息
+
+        // 2. 檢查後端是否傳來了是哪個 "field" 出錯
+        if (result.field) {
+          // 3. 使用 switch 結構，方便未來擴充其他欄位的驗證
+          switch (result.field) {
+            case 'storageLocation':
+              // 4. 只還原 storageLocation 這一個欄位
+              if (mode === 'edit' && originalScore) {
+                // 在編輯模式下，還原為進入編輯前的原始值
+                setStorageLocation(originalScore.storageLocation);
+              } else {
+                // 在新增模式下，直接清空錯誤的值
+                setStorageLocation('');
+              }
+              break;
+            
+            // case 'anotherField':
+            //   // 未來若有其他欄位的唯一性驗證，可在此擴充
+            //   // setAnotherField(originalScore.anotherField);
+            //   break;
+
+            default:
+              // 如果是未知的欄位錯誤，不做任何操作，以保留使用者輸入
+              break;
+          }
+        }
+        // 如果後端沒有提供 field 標記 (例如通用錯誤或網路錯誤)，
+        // 我們也不做任何還原操作，以避免意外丟失使用者輸入。
+        
       } else {
+        // --- 新增：操作成功時也給予提示 ---
+        toast.success(result.message || (mode === 'add' ? '新增成功！' : '更新成功！'));
+        // 更新成功
         onSuccess();
         closeModal();
       }
