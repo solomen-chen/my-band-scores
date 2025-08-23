@@ -87,6 +87,7 @@ export async function addScore(formData) {
     remarks: formData.get('remarks'),
     coverUrl: formData.get('coverUrl'), // 從前端傳來的 URL
     coverPublicId: formData.get('coverPublicId'), // 從前端傳來的 Public ID
+    videoUrl: formData.get('videoUrl'),
   };
 
   if (!scoreData.songTitle || !scoreData.storageLocation) {
@@ -124,6 +125,7 @@ export async function updateScore(id, formData) {
     remarks: formData.get('remarks'),
     coverUrl: formData.get('coverUrl'),
     coverPublicId: formData.get('coverPublicId'),
+    videoUrl: formData.get('videoUrl'),
   };
 
   if (!scoreData.songTitle || !scoreData.storageLocation) {

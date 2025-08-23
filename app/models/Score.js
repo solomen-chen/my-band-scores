@@ -33,7 +33,11 @@ const ScoreSchema = new mongoose.Schema({
   },
   coverPublicId: { // 儲存圖片在 Cloudinary 的 Public ID，用於刪除
     type: String,
-  }
+  },
+  videoUrl: {
+    type: String,
+    trim: true, // 自動移除前後空白
+  },
 }, {
   timestamps: true
 });

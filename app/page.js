@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useTransition, Fragment } from 'react';
 import { Dialog, Combobox, ComboboxOptions, ComboboxOption } from '@headlessui/react';
-import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpDownIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/solid';
 import { getScores, addScore, updateScore, deleteScore, getAllTags } from './actions';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -181,6 +181,11 @@ export default function HomePage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {score.videoUrl && (
+                        <a href={score.videoUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 mr-4">
+                          <VideoCameraIcon className="h-5 w-5" />
+                        </a>
+                      )}
                       <button onClick={() => openModal('edit', score)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200 mr-4"><PencilIcon className="h-5 w-5" /></button>
                       <button onClick={() => openDeleteConfirm(score)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"><TrashIcon className="h-5 w-5" /></button>
                     </td>
@@ -261,12 +266,13 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
   const [remarks, setRemarks] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [coverPublicId, setCoverPublicId] = useState('');
+  const [videoUrl, setVideoUrl] = useState(''); // 包含影片連結的 state
   
-  // 用於 Combobox 的查詢狀態
   const [tagQuery, setTagQuery] = useState('');
 
   useEffect(() => {
     if (isOpen) {
+      // 初始化所有 state
       setSongTitle(score?.songTitle || '');
       setStorageLocation(score?.storageLocation || '');
       setTags(score?.tags || '');
@@ -274,6 +280,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
       setRemarks(score?.remarks || '');
       setCoverUrl(score?.coverUrl || '');
       setCoverPublicId(score?.coverPublicId || '');
+      setVideoUrl(score?.videoUrl || ''); // 初始化影片連結
       setTagQuery('');
     }
   }, [isOpen, score]);
@@ -305,6 +312,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData();
+    // 將所有 state 的值加入 FormData
     formData.append('songTitle', songTitle);
     formData.append('storageLocation', storageLocation);
     formData.append('tags', tags);
@@ -312,6 +320,8 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
     formData.append('remarks', remarks);
     formData.append('coverUrl', coverUrl);
     formData.append('coverPublicId', coverPublicId);
+    formData.append('videoUrl', videoUrl); // 加入影片連結
+
     startTransition(async () => {
       const action = mode === 'add' ? addScore(formData) : updateScore(score._id, formData);
       const result = await action;
@@ -333,7 +343,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
             {mode === 'add' ? '新增樂譜' : '編輯樂譜'}
           </h3>
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            {/* ... 其他欄位 (songTitle, storageLocation) ... */}
+            {/* --- 這裡包含了所有被遺漏的欄位 --- */}
             <div>
               <label htmlFor="songTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300">樂曲名稱</label>
               <input type="text" id="songTitle" required maxLength="10" value={songTitle} onChange={(e) => setSongTitle(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
@@ -342,51 +352,18 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
               <label htmlFor="storageLocation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">存放位置</label>
               <input type="text" id="storageLocation" required maxLength="4" value={storageLocation} onChange={(e) => setStorageLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
             </div>
-            
-            {/* --- 使用最新 v2.x 寫法重構 Combobox --- */}
             <div>
               <label htmlFor="tags-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">屬性標籤</label>
               <Combobox value={tags} onChange={setTags} onClose={() => setTagQuery('')}>
                 <div className="relative mt-1">
-                  {/* 直接使用 input，Headless UI 會自動關聯 */}
-                  <input
-                    id="tags-input"
-                    maxLength="50"
-                    placeholder="例如: #感恩 #讚美 #節慶"
-                    className="w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 pr-10"
-                    onChange={(event) => {
-                      setTags(event.target.value);
-                      setTagQuery(event.target.value.split(/#|\s+/).pop());
-                    }}
-                    // 讓 Combobox 控制 input 的 value
-                    value={tags}
-                  />
-                  {/* 直接使用 button */}
-                  <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                  </button>
+                  <input id="tags-input" maxLength="50" placeholder="例如: #感恩 #讚美 #節慶" className="w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 pr-10" onChange={(event) => { setTags(event.target.value); setTagQuery(event.target.value.split(/#|\s+/).pop()); }} value={tags} />
+                  <button type="button" className="absolute inset-y-0 right-0 flex items-center pr-2"><ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" /></button>
                 </div>
-                {/* 使用獨立的 ComboboxOptions 元件 */}
                 <ComboboxOptions anchor="bottom" className="absolute z-20 mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-md bg-white dark:bg-slate-700 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                  {filteredTags.length === 0 && tagQuery !== '' ? (
-                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">可直接輸入新標籤</div>
-                  ) : (
-                    filteredTags.map((tag) => (
-                      // 使用獨立的 ComboboxOption 元件
-                      <ComboboxOption
-                        key={tag}
-                        className="group relative cursor-default select-none py-2 pl-10 pr-4 data-[focus]:bg-indigo-600 data-[focus]:text-white text-gray-900 dark:text-gray-200"
-                        value={tag}
-                      >
-                        <span className="block truncate group-data-[selected]:font-medium">{tag}</span>
-                      </ComboboxOption>
-                    ))
-                  )}
+                  {filteredTags.length === 0 && tagQuery !== '' ? (<div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">可直接輸入新標籤</div>) : (filteredTags.map((tag) => (<ComboboxOption key={tag} className="group relative cursor-default select-none py-2 pl-10 pr-4 data-[focus]:bg-indigo-600 data-[focus]:text-white text-gray-900 dark:text-gray-200" value={tag}><span className="block truncate group-data-[selected]:font-medium">{tag}</span></ComboboxOption>)))}
                 </ComboboxOptions>
               </Combobox>
             </div>
-
-            {/* ... 其他欄位 (presentationDate, remarks, cover) ... */}
             <div>
               <label htmlFor="presentationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">獻詩日</label>
               <input type="date" id="presentationDate" value={presentationDate} onChange={(e) => setPresentationDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
@@ -395,6 +372,14 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
               <label htmlFor="remarks" className="block text-sm font-medium text-gray-700 dark:text-gray-300">備註</label>
               <textarea id="remarks" rows="2" maxLength="50" value={remarks} onChange={(e) => setRemarks(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700"></textarea>
             </div>
+            
+            {/* --- 新增的影片連結輸入框 --- */}
+            <div>
+              <label htmlFor="videoUrl" className="block text-sm font-medium text-gray-700 dark:text-gray-300">影片連結 (YouTube)</label>
+              <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={(e ) => setVideoUrl(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
+            </div>
+
+            {/* --- 封面欄位 --- */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">封面</label>
               <div className="mt-2 flex items-center gap-x-3">
@@ -405,6 +390,8 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
                 <input id="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" disabled={isUploading} />
               </div>
             </div>
+
+            {/* --- 按鈕 --- */}
             <div className="mt-6 flex justify-end gap-4">
               <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-600 rounded-md hover:bg-gray-200 dark:hover:bg-slate-500">取消</button>
               <button type="submit" disabled={isPending || isUploading} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed">
