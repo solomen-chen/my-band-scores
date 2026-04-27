@@ -13,7 +13,7 @@
     "@heroicons/react": "^2.2.0",
     "cloudinary": "^2.7.0",
     "mongoose": "^8.17.2",
-    "next": "15.5.0",
+    "next": "15.5.9",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0"
