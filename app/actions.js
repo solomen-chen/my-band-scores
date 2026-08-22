@@ -1,3 +1,4 @@
+// actions.js
 'use server';
 
 import dbConnect from './lib/dbConnect';
@@ -12,18 +13,19 @@ cloudinary.config({
 });
 
 
-// --- 修改 getScores 函式以支援分頁 ---
+// --- 修改 getScores 函式：支援分頁 + 三種排序 ---
 export async function getScores(options = {}) {
   const {
     titleKeyword = '',
     tagKeyword = '',
+    sortBy = 'title',      // 'title' | 'location' | 'date'
     page = 1,
-    limit = 10 // 每頁預設顯示 10 筆
+    limit = 10
   } = options;
 
   try {
     await dbConnect();
-    
+
     const query = {};
     if (titleKeyword) {
       query.songTitle = { $regex: titleKeyword, $options: 'i' };
@@ -32,27 +34,51 @@ export async function getScores(options = {}) {
       query.tags = { $regex: tagKeyword.replace(/#/g, ''), $options: 'i' };
     }
 
-    // 計算總筆數
+    // 計算總筆數（跟排序無關，用原本的 query 條件即可）
     const totalScores = await Score.countDocuments(query);
-    
-    // 根據分頁參數查詢資料
-    let scoresQuery = Score.find(query)
-      .limit(limit)
-      .skip((page - 1) * limit);
 
-    // 只有在沒有標籤搜尋時才按創建時間排序，標籤搜尋時維持 MongoDB 的預設排序
-    if (!tagKeyword) {
-      scoresQuery = scoresQuery.sort({ createdAt: -1 });
+    // 組合 aggregation pipeline
+    const pipeline = [{ $match: query }];
+
+    switch (sortBy) {
+      case 'location':
+        // 存放位置：由小而大
+        pipeline.push({ $sort: { storageLocation: 1 } });
+        break;
+
+      case 'date':
+        // 最近獻詩日：由近而遠 (遞減)，空白日期會自然排到最後
+        pipeline.push({ $sort: { presentationDate: -1 } });
+        break;
+
+      case 'title':
+      default:
+        // 樂曲名稱：先依字數，再依標題本身排序
+        pipeline.push(
+          {
+            $addFields: {
+              _titleLength: { $strLenCP: { $ifNull: ['$songTitle', ''] } }
+            }
+          },
+          { $sort: { _titleLength: 1, songTitle: 1 } },
+          { $project: { _titleLength: 0 } }
+        );
+        break;
     }
 
-    const scores = await scoresQuery.lean();
+    pipeline.push(
+      { $skip: (page - 1) * limit },
+      { $limit: limit }
+    );
 
-    // 標籤搜尋的排序邏輯移到前端處理，以簡化後端分頁邏輯
-    
+    // 加上中文排序規則 (locale: 'zh')，讓同字數的標題排序更符合直覺
+    const scores = await Score.aggregate(pipeline).collation({ locale: 'zh' });
+
     return {
       scores: JSON.parse(JSON.stringify(scores)),
       totalPages: Math.ceil(totalScores / limit),
       currentPage: page,
+      sortBy,
     };
   } catch (error) {
     console.error('Failed to get scores:', error);

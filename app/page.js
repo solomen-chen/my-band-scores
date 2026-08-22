@@ -20,6 +20,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [sortBy, setSortBy] = useState('title'); // 預設：樂曲名稱排序
 
   // 分頁狀態
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,13 +36,14 @@ export default function HomePage() {
   const [scoreToDelete, setScoreToDelete] = useState(null);
 
   // --- 資料獲取 ---
-  const fetchScores = (pageToFetch = 1) => {
+  const fetchScores = (pageToFetch = 1, sortField = sortBy) => {
     setIsLoading(true);
     startTransition(async () => {
-      const result = await getScores({ 
-        titleKeyword, 
-        tagKeyword, 
-        page: pageToFetch 
+      const result = await getScores({
+        titleKeyword,
+        tagKeyword,
+        sortBy: sortField,
+        page: pageToFetch
       });
       if (result.error) {
         toast.error(`讀取資料失敗: ${result.error}`);
@@ -56,6 +58,13 @@ export default function HomePage() {
     });
   };
 
+  const handleSortChange = (field) => {
+    if (field === sortBy) return; // 已經是目前排序，不用重抓
+    setSortBy(field);
+    setCurrentPage(1);
+    fetchScores(1, field);
+  };
+
   const fetchAllTags = async () => {
     const tags = await getAllTags();
     setAllTags(tags);
@@ -63,7 +72,7 @@ export default function HomePage() {
 
   // 初始載入
   useEffect(() => {
-    fetchScores(1);
+    fetchScores(1, sortBy);
     fetchAllTags();
   }, []);
 
@@ -71,7 +80,7 @@ export default function HomePage() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setCurrentPage(1);
-      fetchScores(1);
+      fetchScores(1, sortBy);
     }, 300);
     return () => clearTimeout(handler);
   }, [titleKeyword, tagKeyword]);
@@ -79,7 +88,7 @@ export default function HomePage() {
   // --- 事件處理 ---
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      fetchScores(newPage);
+      fetchScores(newPage, sortBy);
     }
   };
 
@@ -88,7 +97,7 @@ export default function HomePage() {
   };
 
   const handleSuccess = () => {
-    fetchScores(currentPage);
+    fetchScores(currentPage, sortBy);
     fetchAllTags();
   };
 
@@ -138,9 +147,9 @@ export default function HomePage() {
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">樂曲名稱</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">存放位置</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">最近獻詩日</th>
+                <SortableHeader label="樂曲名稱" field="title" sortBy={sortBy} onClick={handleSortChange} />
+                <SortableHeader label="存放位置" field="location" sortBy={sortBy} onClick={handleSortChange} />
+                <SortableHeader label="最近獻詩日" field="date" sortBy={sortBy} onClick={handleSortChange} />
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">備註</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">屬性</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-300 uppercase tracking-wider">操作</th>
@@ -148,7 +157,11 @@ export default function HomePage() {
             </thead>
             <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
               {(isLoading || isPending) ? (
-                <tr><td colSpan="6" className="text-center py-10 text-slate-500">載入中...</td></tr>
+                <tr>
+                  <td colSpan="6" className="text-center py-10 text-slate-500">
+                    資料排序 / 載入中，請稍候...
+                  </td>
+                </tr>
               ) : scores.length > 0 ? (
                 scores.map((score) => (
                   <tr key={score._id}>
@@ -208,6 +221,25 @@ export default function HomePage() {
     </div>
   );
 }
+function SortableHeader({ label, field, sortBy, onClick }) {
+  const isActive = sortBy === field;
+  return (
+    <th
+      onClick={() => onClick(field)}
+      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none transition-colors
+        ${isActive
+          ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+          : 'text-slate-500 dark:text-slate-300 hover:text-indigo-500'}`}
+      title={`點擊依${label}排序`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {isActive && <span>▾</span>}
+      </span>
+    </th>
+  );
+}
+
 function Lightbox({ src, onClose }) {
   if (!src) return null;
 
