@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition, Fragment } from 'react';
+import { useState, useEffect, useTransition, Fragment,useRef } from 'react';
 import { Dialog, Combobox, ComboboxOptions, ComboboxOption } from '@headlessui/react';
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpDownIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
 import { PhotoIcon } from '@heroicons/react/24/solid';
@@ -248,18 +248,144 @@ function SortableHeader({ label, field, sortBy, onClick }) {
 }
 
 function Lightbox({ src, onClose }) {
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const lastPosition = useRef({ x: 0, y: 0 });
+
+  // 雙指縮放用的暫存值
+  const pinchStartDistance = useRef(0);
+  const pinchStartScale = useRef(1);
+
+  // 圖片切換或關閉時，重置縮放與位移
+  useEffect(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, [src]);
+
   if (!src) return null;
 
+  const MIN_SCALE = 1;
+  const MAX_SCALE = 5;
+
+  const clampScale = (value) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+
+  // 計算兩指之間的距離
+  const getTouchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // --- 滑鼠：滾輪縮放 ---
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = -e.deltaY * 0.001;
+    setScale((prevScale) => {
+      const newScale = clampScale(prevScale + delta);
+      if (newScale === MIN_SCALE) setPosition({ x: 0, y: 0 });
+      return newScale;
+    });
+  };
+
+  // --- 滑鼠：拖曳平移 ---
+  const handleMouseDown = (e) => {
+    if (scale <= MIN_SCALE) return;
+    e.preventDefault();
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    lastPosition.current = position;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPosition({
+      x: lastPosition.current.x + dx,
+      y: lastPosition.current.y + dy,
+    });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  // --- 觸控：開始 ---
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1 && scale > MIN_SCALE) {
+      // 單指拖曳（僅在已放大時）
+      setIsDragging(true);
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastPosition.current = position;
+    } else if (e.touches.length === 2) {
+      // 雙指縮放
+      setIsDragging(false);
+      pinchStartDistance.current = getTouchDistance(e.touches);
+      pinchStartScale.current = scale;
+    }
+  };
+
+  // --- 觸控：移動中 ---
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1 && isDragging) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - dragStart.current.x;
+      const dy = e.touches[0].clientY - dragStart.current.y;
+      setPosition({
+        x: lastPosition.current.x + dx,
+        y: lastPosition.current.y + dy,
+      });
+    } else if (e.touches.length === 2) {
+      e.preventDefault();
+      const newDistance = getTouchDistance(e.touches);
+      const ratio = newDistance / pinchStartDistance.current;
+      const newScale = clampScale(pinchStartScale.current * ratio);
+      setScale(newScale);
+      if (newScale === MIN_SCALE) setPosition({ x: 0, y: 0 });
+    }
+  };
+
+  // --- 觸控：結束 ---
+  const handleTouchEnd = (e) => {
+    setIsDragging(false);
+    // 若還剩一指，重新記錄起點，避免手指數從2變1時跳動
+    if (e.touches.length === 1 && scale > MIN_SCALE) {
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      lastPosition.current = position;
+      setIsDragging(true);
+    }
+  };
+
   return (
-    // 使用 Dialog 來處理焦點管理和背景遮罩
     <Dialog open={!!src} onClose={onClose} className="relative z-50">
       {/* 背景遮罩 */}
       <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
 
       {/* 圖片容器 */}
-      <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-        <Dialog.Panel className="relative">
-          <img src={src} alt="Enlarged score cover" className="max-h-[90vh] max-w-[90vw] object-contain" />
+      <div
+        className="fixed inset-0 flex w-screen items-center justify-center p-4 overflow-hidden touch-none"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <Dialog.Panel className="relative" onClick={(e) => e.stopPropagation()}>
+          <img
+            src={src}
+            alt="Enlarged score cover"
+            draggable={false}
+            className="max-h-[90vh] max-w-[90vw] object-contain select-none"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+              cursor: scale > MIN_SCALE ? (isDragging ? 'grabbing' : 'grab') : 'default',
+            }}
+          />
           {/* 關閉按鈕 */}
           <button
             onClick={onClose}
