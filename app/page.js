@@ -125,8 +125,15 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-200">樂團樂譜檢索系統</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-700 dark:text-slate-200">
+              斗南長老教會樂譜檢索系統
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              斗南教會聖歌隊詩歌樂譜檢索查詢工具，快速找到樂譜存放位置與獻詩紀錄。
+            </p>
+          </div>
           <button onClick={() => openModal('add')} className="flex items-center gap-2 bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors w-full sm:w-auto">
             <PlusIcon className="h-5 w-5" />
             新增樂譜

@@ -7,16 +7,37 @@ import { Toaster } from 'react-hot-toast'; // 1. 導入 Toaster
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: '樂譜檢索', // 這是您之前設定的標題
-  description: '斗南長老教會聖歌隊樂譜檢索系統',
+  metadataBase: new URL("https://my-band-scores.vercel.app"),
+  title: "斗南長老教會樂譜檢索 | 斗南教會聖歌隊詩歌樂譜查詢",
+  description:
+    "斗南長老教會樂譜檢索系統，提供斗南教會聖歌隊詩歌樂譜線上查詢與管理，快速找到需要的詩歌樂譜。",
+  keywords: ["斗南教會", "斗南長老教會", "斗南教會樂譜", "斗南教會聖歌隊", "樂譜檢索"],
+  openGraph: {
+    title: "斗南長老教會樂譜檢索",
+    description: "斗南教會聖歌隊詩歌樂譜線上查詢系統",
+    url: "https://my-band-scores.vercel.app",
+    siteName: "斗南長老教會樂譜檢索",
+    locale: "zh_TW",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="zh-TW">
       <body className={inter.className}>
-        {/* 2. 將 Toaster 元件放在這裡 */}
-        {/* 它可以接收一些全域設定，例如位置、樣式等 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Church",
+              name: "斗南長老教會",
+              alternateName: "斗南教會",
+              url: "https://my-band-scores.vercel.app",
+            }),
+          }}
+        />
         <Toaster 
           position="top-center" // 顯示在頂部中間
           reverseOrder={false}
@@ -39,6 +60,7 @@ export default function RootLayout({ children }) {
             },
           }}
         />
+        
         {children}
       </body>
     </html>
