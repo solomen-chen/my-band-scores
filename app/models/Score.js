@@ -13,7 +13,7 @@ const ScoreSchema = new mongoose.Schema({
     type: String,
     required: [true, '存放位置為必填欄位'],
     trim: true,
-    maxlength: [4, '存放位置不能超過 4 個字']
+    maxlength: [6, '存放位置不能超過 6 個字']
   },
   // --- 新增欄位 ---
   tags: {

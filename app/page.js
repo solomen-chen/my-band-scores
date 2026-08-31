@@ -556,7 +556,7 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
             </div>
             <div>
               <label htmlFor="storageLocation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">存放位置</label>
-              <input type="text" id="storageLocation" required maxLength="4" value={storageLocation} onChange={(e) => setStorageLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
+              <input type="text" id="storageLocation" required maxLength="6" value={storageLocation} onChange={(e) => setStorageLocation(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700" />
             </div>
             <div>
               <label htmlFor="tags-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">屬性標籤</label>
