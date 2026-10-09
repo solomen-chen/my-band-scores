@@ -150,7 +150,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="hidden overflow-x-auto md:block">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
@@ -219,29 +219,6 @@ export default function HomePage() {
           </table>
         </div>
 
-        <div className="space-y-3 md:hidden">
-          {(isLoading || isPending) ? (
-            <div className="rounded-lg bg-slate-50 px-4 py-10 text-center text-slate-500 dark:bg-slate-700/50">
-              資料排序 / 載入中，請稍候...
-            </div>
-          ) : scores.length > 0 ? (
-            scores.map((score) => (
-              <MobileScoreCard
-                key={score._id}
-                score={score}
-                onTitleClick={setLightboxImage}
-                onTagClick={handleTagClick}
-                onEdit={() => openModal('edit', score)}
-                onDelete={() => openDeleteConfirm(score)}
-              />
-            ))
-          ) : (
-            <div className="rounded-lg bg-slate-50 px-4 py-10 text-center text-slate-500 dark:bg-slate-700/50">
-              找不到符合條件的樂譜
-            </div>
-          )}
-        </div>
-
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
 
@@ -251,99 +228,6 @@ export default function HomePage() {
     </div>
   );
 }
-function MobileScoreCard({ score, onTitleClick, onTagClick, onEdit, onDelete }) {
-  const tags = score.tags?.split(/#|\s+/).filter(Boolean) || [];
-
-  return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {score.coverUrl ? (
-            <button
-              type="button"
-              onClick={() => onTitleClick(score.coverUrl)}
-              className="break-words text-left text-lg font-semibold text-slate-800 transition-colors hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-100 dark:hover:text-indigo-400"
-              aria-label={`查看${score.songTitle}封面`}
-            >
-              {score.songTitle}
-            </button>
-          ) : (
-            <h2 className="break-words text-lg font-semibold text-slate-800 dark:text-slate-100">
-              {score.songTitle}
-            </h2>
-          )}
-        </div>
-        <span className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
-          {score.storageLocation || '—'}
-        </span>
-      </div>
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-        <div>
-          <dt className="text-slate-500 dark:text-slate-400">最近獻詩日</dt>
-          <dd className="mt-0.5 text-slate-700 dark:text-slate-200">{score.presentationDate || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500 dark:text-slate-400">屬性</dt>
-          <dd className="mt-0.5">
-            {tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => onTagClick(tag)}
-                    className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 transition-colors hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <span className="text-slate-700 dark:text-slate-200">—</span>
-            )}
-          </dd>
-        </div>
-      </dl>
-
-      <div className="mt-4 border-t border-slate-100 pt-3 text-sm dark:border-slate-700">
-        <dt className="text-slate-500 dark:text-slate-400">備註</dt>
-        <dd className="mt-0.5 break-words text-slate-700 dark:text-slate-200">{score.remarks || '—'}</dd>
-      </div>
-
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
-        {score.videoUrl && (
-          <a
-            href={score.videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
-          >
-            <VideoCameraIcon className="h-5 w-5" aria-hidden="true" />
-            觀看影片
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={onEdit}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
-        >
-          <PencilIcon className="h-5 w-5" aria-hidden="true" />
-          編輯
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-red-300 dark:hover:bg-red-900/40"
-        >
-          <TrashIcon className="h-5 w-5" aria-hidden="true" />
-          刪除
-        </button>
-      </div>
-    </article>
-  );
-}
-
 function SortableHeader({ label, field, sortBy, onClick }) {
   const isActive = sortBy === field;
   return (
@@ -659,8 +543,8 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
   return (
     <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      <div className="fixed inset-0 flex w-screen items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-4">
-        <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md transform overflow-y-auto rounded-2xl bg-white p-4 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in dark:bg-slate-800 sm:max-h-[calc(100dvh-2rem)] sm:p-6">
+      <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+        <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
             {mode === 'add' ? '新增樂譜' : '編輯樂譜'}
           </h3>
@@ -714,9 +598,9 @@ function ScoreModal({ isOpen, closeModal, mode, score, onSuccess, allTags }) {
             </div>
 
             {/* --- 按鈕 --- */}
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
-              <button type="button" onClick={closeModal} className="min-h-11 w-full rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-slate-600 dark:text-gray-300 dark:hover:bg-slate-500 sm:w-auto">取消</button>
-              <button type="submit" disabled={isPending || isUploading} className="min-h-11 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto">
+            <div className="mt-6 flex justify-end gap-4">
+              <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-600 rounded-md hover:bg-gray-200 dark:hover:bg-slate-500">取消</button>
+              <button type="submit" disabled={isPending || isUploading} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed">
                 {isPending ? '儲存中...' : '儲存'}
               </button>
             </div>
@@ -733,9 +617,9 @@ function DeleteConfirmModal({ isOpen, closeModal, onConfirm, isPending }) {
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       {/* 對話框容器 */}
-      <div className="fixed inset-0 flex w-screen items-center justify-center p-3 sm:p-4">
+      <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
         {/* 移除 Dialog.Panel，改用 div */}
-        <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-4 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in dark:bg-slate-800 sm:p-6">
+        <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-6 text-left align-middle shadow-xl transition-all data-[closed]:opacity-0 data-[closed]:scale-95 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in">
           {/* 移除 Dialog.Title，改用 h3 */}
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
             確認刪除
@@ -745,9 +629,9 @@ function DeleteConfirmModal({ isOpen, closeModal, onConfirm, isPending }) {
               您確定要刪除這筆樂譜資料嗎？此操作無法復原。
             </p>
           </div>
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4">
-            <button type="button" onClick={closeModal} className="min-h-11 w-full rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-slate-600 dark:text-gray-300 dark:hover:bg-slate-500 sm:w-auto">取消</button>
-            <button type="button" onClick={onConfirm} disabled={isPending} className="min-h-11 w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:bg-red-300 sm:w-auto">
+          <div className="mt-6 flex justify-end gap-4">
+            <button type="button" onClick={closeModal} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-600 rounded-md hover:bg-gray-200 dark:hover:bg-slate-500">取消</button>
+            <button type="button" onClick={onConfirm} disabled={isPending} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-red-300">
               {isPending ? '刪除中...' : '確認刪除'}
             </button>
           </div>
