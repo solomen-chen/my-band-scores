@@ -255,69 +255,73 @@ function MobileScoreCard({ score, onTitleClick, onTagClick, onEdit, onDelete }) 
   const tags = score.tags?.split(/#|\s+/).filter(Boolean) || [];
 
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {score.coverUrl ? (
-            <button
-              type="button"
-              onClick={() => onTitleClick(score.coverUrl)}
-              className="break-words text-left text-lg font-semibold text-slate-800 transition-colors hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-slate-100 dark:hover:text-indigo-400"
-              aria-label={`查看${score.songTitle}封面`}
-            >
-              {score.songTitle}
-            </button>
-          ) : (
-            <h2 className="break-words text-lg font-semibold text-slate-800 dark:text-slate-100">
-              {score.songTitle}
-            </h2>
-          )}
-        </div>
-        <span className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-1 text-sm font-semibold text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
-          {score.storageLocation || '—'}
-        </span>
-      </div>
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-        <div>
-          <dt className="text-slate-500 dark:text-slate-400">最近獻詩日</dt>
-          <dd className="mt-0.5 text-slate-700 dark:text-slate-200">{score.presentationDate || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-slate-500 dark:text-slate-400">屬性</dt>
-          <dd className="mt-0.5">
-            {tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => onTagClick(tag)}
-                    className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800 transition-colors hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
+    <article
+      className="relative aspect-[3/4] overflow-hidden rounded-[2rem] bg-[#111a3a] bg-cover bg-center shadow-xl shadow-indigo-950/40"
+      style={{ backgroundImage: "url('/score-card-bg.png')" }}
+    >
+      <div className="relative flex h-full flex-col p-[11%] text-slate-100">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {score.coverUrl ? (
+              <button
+                type="button"
+                onClick={() => onTitleClick(score.coverUrl)}
+                className="break-words text-left text-xl font-semibold leading-tight text-white transition-colors hover:text-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:text-2xl"
+                aria-label={`查看${score.songTitle}封面`}
+              >
+                {score.songTitle}
+              </button>
             ) : (
-              <span className="text-slate-700 dark:text-slate-200">—</span>
+              <h2 className="break-words text-xl font-semibold leading-tight text-white sm:text-2xl">
+                {score.songTitle}
+              </h2>
             )}
-          </dd>
+          </div>
+          <span className="shrink-0 rounded-full bg-indigo-500/80 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-indigo-950/40 sm:text-base">
+            {score.storageLocation || '—'}
+          </span>
         </div>
-      </dl>
 
-      <div className="mt-4 border-t border-slate-100 pt-3 text-sm dark:border-slate-700">
-        <dt className="text-slate-500 dark:text-slate-400">備註</dt>
-        <dd className="mt-0.5 break-words text-slate-700 dark:text-slate-200">{score.remarks || '—'}</dd>
-      </div>
+        <dl className="mt-[10%] grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:text-base">
+          <div className="min-w-0">
+            <dt className="text-cyan-100/75">最近獻詩日</dt>
+            <dd className="mt-1 truncate font-medium text-white">{score.presentationDate || '—'}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-cyan-100/75">屬性</dt>
+            <dd className="mt-1">
+              {tags.length > 0 ? (
+                <div className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
+                  {tags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => onTagClick(tag)}
+                      className="rounded-full bg-emerald-400/20 px-2 py-1 text-xs text-emerald-100 transition-colors hover:bg-emerald-400/40 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-white">—</span>
+              )}
+            </dd>
+          </div>
+        </dl>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <div className="mt-[8%] min-h-0 flex-1 border-t border-cyan-200/40 pt-[6%] text-sm sm:text-base">
+          <dt className="text-cyan-100/75">備註</dt>
+          <dd className="mt-1 break-words text-white/90 line-clamp-4">{score.remarks || '—'}</dd>
+        </div>
+
+        <div className="mt-4 flex flex-wrap justify-end gap-1 sm:gap-2">
         {score.videoUrl && (
           <a
             href={score.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-100/15 focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:gap-1.5 sm:px-3"
           >
             <VideoCameraIcon className="h-5 w-5" aria-hidden="true" />
             觀看影片
@@ -326,7 +330,7 @@ function MobileScoreCard({ score, onTitleClick, onTagClick, onEdit, onDelete }) 
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-violet-100 transition-colors hover:bg-violet-100/15 focus:outline-none focus:ring-2 focus:ring-violet-300 sm:gap-1.5 sm:px-3"
         >
           <PencilIcon className="h-5 w-5" aria-hidden="true" />
           編輯
@@ -334,11 +338,12 @@ function MobileScoreCard({ score, onTitleClick, onTagClick, onEdit, onDelete }) 
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-red-300 dark:hover:bg-red-900/40"
+          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-rose-200 transition-colors hover:bg-rose-100/15 focus:outline-none focus:ring-2 focus:ring-rose-300 sm:gap-1.5 sm:px-3"
         >
           <TrashIcon className="h-5 w-5" aria-hidden="true" />
           刪除
         </button>
+      </div>
       </div>
     </article>
   );
