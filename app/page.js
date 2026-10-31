@@ -351,19 +351,23 @@ function MobileScoreCard({ score, onTitleClick, onTagClick, onEdit, onDelete }) 
 
 function SortableHeader({ label, field, sortBy, onClick }) {
   const isActive = sortBy === field;
+
   return (
-    <th
-      onClick={() => onClick(field)}
-      className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer select-none transition-colors
-        ${isActive
-          ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-          : 'text-slate-500 dark:text-slate-300 hover:text-indigo-500'}`}
-      title={`點擊依${label}排序`}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        {isActive && <span>▾</span>}
-      </span>
+    <th className="px-6 py-3 text-left">
+      <button
+        type="button"
+        onClick={() => onClick(field)}
+        className={`shine-outline-button inline-flex items-center gap-1 rounded-md border px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 dark:focus:ring-offset-slate-700
+          ${isActive
+            ? 'border-indigo-500 text-indigo-600 dark:border-indigo-400 dark:text-indigo-300'
+            : 'border-slate-300 text-slate-500 hover:border-indigo-400 hover:text-indigo-500 dark:border-slate-500 dark:text-slate-300 dark:hover:border-indigo-400 dark:hover:text-indigo-300'}`}
+        title={`點擊依${label}排序`}
+      >
+        <span className="relative z-10 inline-flex items-center gap-1">
+          {label}
+          {isActive && <span aria-hidden="true">▾</span>}
+        </span>
+      </button>
     </th>
   );
 }
