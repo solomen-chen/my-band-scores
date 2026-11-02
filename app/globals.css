@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --shine-rgb: 79, 70, 229;
 }
 
 :root {
@@ -16,6 +17,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --shine-rgb: 255, 255, 255;
   }
 }
 
@@ -43,7 +45,6 @@ body {
 
 .shine-outline-button {
   position: relative;
-  display: inline-flex;
   overflow: hidden;
   isolation: isolate;
   background-color: transparent;
@@ -55,23 +56,22 @@ body {
 .shine-outline-button::after {
   content: '';
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   top: -45%;
   left: -75%;
   width: 42%;
   height: 190%;
   pointer-events: none;
   transform: skewX(-20deg);
-  will-change: left;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.08) 20%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.08) 80%,
+    rgba(var(--shine-rgb), 0.08) 20%,
+    rgba(var(--shine-rgb), 0.9) 50%,
+    rgba(var(--shine-rgb), 0.08) 80%,
     transparent 100%
   );
-  animation: shine-sweep-outline 3.5s linear infinite;
+  animation: shine-sweep-outline 3.5s ease-in-out infinite;
 }
 
 .shine-outline-button:hover {
@@ -90,5 +90,3 @@ body {
     transform: none;
   }
 }
-
-
